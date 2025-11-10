@@ -6,8 +6,14 @@ async function request(path, options = {}) {
     ...options,
   })
   if (!res.ok) {
-    const text = await res.text()
-    throw new Error(text || `Request failed: ${res.status}`)
+    let message = `Request failed: ${res.status}`
+    try {
+      const data = await res.json()
+      message = typeof data.detail === 'string' ? data.detail : JSON.stringify(data)
+    } catch (_) {
+      try { message = await res.text() } catch (_) {}
+    }
+    throw new Error(message)
   }
   return res.json()
 }
@@ -15,8 +21,8 @@ async function request(path, options = {}) {
 export const api = {
   baseUrl: BASE_URL,
   ping: () => request('/'),
-  list: (collection, limit = 50) => request(`/api/${collection}?limit=${limit}`),
-  create: (collection, data) => request(`/api/${collection}`, { method: 'POST', body: JSON.stringify({ data }) }),
+  list: (collection, limit = 50) => request(`/api/collections/${collection}?limit=${limit}`),
+  create: (collection, data) => request(`/api/collections/${collection}`, { method: 'POST', body: JSON.stringify({ data }) }),
   defaultTemplates: () => request('/api/templates/defaults'),
   generate: (template, variables) => request('/api/generate', { method: 'POST', body: JSON.stringify({ template, variables }) }),
 }
